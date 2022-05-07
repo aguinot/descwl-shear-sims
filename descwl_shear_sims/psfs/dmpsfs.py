@@ -1,9 +1,11 @@
 import numpy as np
 import galsim
-import lsst.afw.image as afw_image
-import lsst.geom as geom
-from lsst.meas.algorithms import ImagePsf
+#import lsst.afw.image as afw_image
+#import lsst.geom as geom
+#from lsst.meas.algorithms import ImagePsf
 from .ps_psf import PowerSpectrumPSF
+
+#from . import afw_image
 
 
 def make_dm_psf(psf, psf_dim, wcs):
@@ -128,16 +130,16 @@ class FixedDMPSF(ImagePsf):
 
         Parameters
         ----------
-        image_pos: geom.Point2D
+        image_pos: galsim.PositionD
             A point in the original image at which evaluate the kernel
         offset: tuple, optional
             The (x, y) offset, default None
         """
-        from lsst.geom import Point2I
+        #from lsst.geom import Point2I
         dim = self._psf_dim
 
-        x = image_pos.getX()
-        y = image_pos.getY()
+        x = image_pos.x
+        y = image_pos.y
 
         gs_pos = galsim.PositionD(x=x, y=y)
         gspsf = self._get_gspsf(gs_pos)
@@ -154,11 +156,11 @@ class FixedDMPSF(ImagePsf):
         off = -(dim // 2)
         if is_kernel:
             # Point2I(x) is same as Point2I(x, x)
-            corner = Point2I(off)
+            corner = galsim.PositionD(off)
         else:
             ix = int(np.floor(x + 0.5))
             iy = int(np.floor(y + 0.5))
-            corner = Point2I(ix + off, iy + off)
+            corner = galsim.PositionD(ix + off, iy + off)
 
         bbox = geom.Box2I(corner, geom.Extent2I(dims))
 
