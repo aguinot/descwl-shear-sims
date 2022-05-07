@@ -1,5 +1,5 @@
 import numpy as np
-import lsst.afw.image as afw_image
+#import lsst.afw.image as afw_image
 import galsim
 from ..artifacts import (
     generate_cosmic_rays,
@@ -36,24 +36,24 @@ def get_bmask_and_set_image(*, image, rng, cosmic_rays, bad_columns):
     mask = np.zeros(shape, dtype=np.int64)
 
     if cosmic_rays:
-
         # bool mask
         c_mask = generate_cosmic_rays(
             shape=shape,
             rng=rng,
             mean_cosmic_rays=1,
         )
-        mask[c_mask] |= get_flagval('CR')
+        mask[c_mask] |= get_flagval("CR")
         image.array[c_mask] = np.nan
 
     if bad_columns:
+        pass
         # bool mask
         bc_mask = generate_bad_columns(
             shape=shape,
             rng=rng,
             mean_bad_cols=1,
         )
-        mask[bc_mask] |= afw_image.Mask.getPlaneBitMask('BAD')
+        mask[bc_mask] |= get_flagval("BAD")
         image.array[bc_mask] = np.nan
 
     return galsim.Image(

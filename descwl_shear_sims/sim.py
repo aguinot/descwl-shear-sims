@@ -3,8 +3,10 @@ import esutil as eu
 import galsim
 import numpy as np
 
-import lsst.afw.image as afw_image
-from lsst.afw.cameraGeom.testUtils import DetectorWrapper
+#import lsst.afw.image as afw_image
+#from lsst.afw.cameraGeom.testUtils import DetectorWrapper
+
+from . import afw_image
 
 from .lsst_bits import get_flagval
 from .saturation import saturate_image_and_mask, BAND_SAT_VALS
@@ -16,8 +18,9 @@ from .masking import (
     calculate_bright_star_mask_radius,
 )
 from .objlists import get_objlist
-from .psfs import make_dm_psf
-from .wcs import make_wcs, make_dm_wcs, make_coadd_dm_wcs
+#from .psfs import make_dm_psf
+from .wcs import make_wcs#, make_dm_wcs, make_coadd_dm_wcs
+from .wcs.wcstools import make_coadd_wcs
 
 
 DEFAULT_SIM_CONFIG = {
@@ -65,6 +68,7 @@ def make_sim(
     star_bleeds=False,
     sky_n_sigma=None,
     draw_method='auto',
+    do_coadd=False,
 ):
     """
     Make simulation data
@@ -127,10 +131,12 @@ def make_sim(
             has_bleed: bool, True if there is a bleed trail
     """
 
-    coadd_wcs, coadd_bbox = make_coadd_dm_wcs(coadd_dim)
-    coadd_bbox_cen_gs_skypos = get_coadd_center_gs_pos(
-        coadd_wcs=coadd_wcs, coadd_bbox=coadd_bbox,
-    )
+    # coadd_wcs, coadd_bbox = make_coadd_dm_wcs(coadd_dim)
+    # coadd_bbox_cen_gs_skypos = get_coadd_center_gs_pos(
+    #     coadd_wcs=coadd_wcs, coadd_bbox=coadd_bbox,
+    # )
+    coadd_wcs = make_coadd_wcs(coadd_dim)
+    coadd_bbox_cen_gs_skypos = coadd_wcs.center
 
     if se_dim is None:
         se_dim = get_se_dim(coadd_dim=coadd_dim, dither=dither, rotate=rotate)
@@ -208,14 +214,39 @@ def make_sim(
         band_data[band] = bdata_list
 
     bright_info = eu.numpy_util.combine_arrlist(bright_info)
-    return {
+
+    output_dict = {
         'band_data': band_data,
         'coadd_wcs': coadd_wcs,
         'psf_dims': (psf_dim, )*2,
         'coadd_dims': (coadd_dim, )*2,
-        'coadd_bbox': coadd_bbox,
+        #'coadd_bbox': coadd_bbox,
         'bright_info': bright_info,
     }
+
+    if do_coadd:
+        coadd, _ = make_coadd(
+            rng=rng,
+            band=rng,
+            noise=survey.noise*noise_factor,
+            objlist=lists['objlist'],
+            shifts=lists['shifts'],
+            dim=coadd_dim,
+            coadd_wcs=coadd_wcs,
+            psf=psf,
+            psf_dim=psf_dim,
+            g1=g1,
+            g2=g2,
+            star_objlist=lists['star_objlist'],
+            star_shifts=lists['star_shifts'],
+            draw_stars=draw_stars,
+            coadd_bbox_cen_gs_skypos=coadd_bbox_cen_gs_skypos,
+            sky_n_sigma=sky_n_sigma,
+            draw_method=draw_method,
+        )
+        output_dict['coadd_data'] = coadd
+
+    return output_dict
 
 
 def make_exp(
@@ -388,8 +419,8 @@ def make_exp(
     else:
         bright_info = []
 
-    dm_wcs = make_dm_wcs(se_wcs)
-    dm_psf = make_dm_psf(psf=psf, psf_dim=psf_dim, wcs=se_wcs)
+    #dm_wcs = make_dm_wcs(se_wcs)
+    #dm_psf = make_dm_psf(psf=psf, psf_dim=psf_dim, wcs=se_wcs)
 
     variance = image.copy()
     variance.array[:, :] = noise**2
@@ -404,14 +435,194 @@ def make_exp(
     filter_label = afw_image.FilterLabel(band=band, physical=band)
     exp.setFilterLabel(filter_label)
 
-    exp.setPsf(dm_psf)
+    exp.setPsf(psf)
 
-    exp.setWcs(dm_wcs)
+    exp.setWcs(se_wcs)
 
-    detector = DetectorWrapper().detector
-    exp.setDetector(detector)
+    #detector = DetectorWrapper().detector
+    #exp.setDetector(detector)
 
     return exp, bright_info
+
+
+def make_coadd(
+    *,
+    rng,
+    band,
+    noise,
+    objlist,
+    shifts,
+    dim,
+    coadd_wcs,
+    psf,
+    psf_dim,
+    g1,
+    g2,
+    star_objlist=None,
+    star_shifts=None,
+    draw_stars=True,
+    bright_objlist=None,
+    bright_shifts=None,
+    bright_mags=None,
+    coadd_bbox_cen_gs_skypos,
+    dither=False,
+    rotate=False,
+    mask_threshold=None,
+    cosmic_rays=False,
+    bad_columns=False,
+    star_bleeds=False,
+    sky_n_sigma=None,
+    draw_method='auto',
+):
+    """
+    Make a CoaddObs
+
+    Parameters
+    ----------
+    rng: numpy.random.RandomState
+        The random number generator
+    band: str
+        Band as a string, e.g. 'i'
+    noise: float
+        Gaussian noise level
+    objlist: list
+        List of GSObj
+    shifts: array
+        List of PositionD representing offsets
+    dim: int
+        Dimension of image
+    psf: GSObject or PowerSpectrumPSF
+        the psf
+    psf_dim: int
+        Dimensions of psf image that will be drawn when psf func is called
+    coadd_bbox_cen_gs_skypos: galsim.CelestialCoord
+        The sky position of the center (origin) of the coadd we
+        will make, as a galsim object not stack object
+    dither: bool
+        If set to True, dither randomly by a pixel width
+    rotate: bool
+        If set to True, rotate the image randomly
+    star_objlist: list
+        List of GSObj for stars
+    star_shifts: array
+        List of PositionD for stars representing offsets
+    draw_stars: bool, optional
+        Draw the stars, don't just mask bright ones.  Default True.
+    bright_objlist: list, optional
+        List of GSObj for bright objects
+    bright_shifts: array, optional
+        List of PositionD for stars representing offsets
+    bright_mags: array, optional
+        Mags for the bright objects
+    mask_threshold: float
+        Bright masks are created such that the profile goes out
+        to this threshold
+    cosmic_rays: bool
+        If True, put in cosmic rays
+    bad_columns: bool
+        If True, put in bad columns
+    star_bleeds: bool
+        If True, add bleed trails to stars
+    sky_n_sigma: float
+        Number of sigma to set the sky value.  Can be negative to
+        mock up a sky oversubtraction.  Default None.
+    draw_method: string
+        Draw method for galsim objects, default 'auto'.  Set to
+        'phot' to get poisson noise.  Note this is much slower.
+
+    Returns
+    -------
+    exp: lsst.afw.image.ExposureF
+        Exposure data
+    bright_info: list of structured arrays
+        fields are
+        ra, dec: sky position of bright stars
+        radius_pixels: radius of mask in pixels
+        has_bleed: bool, True if there is a bleed trail
+    """
+
+    shear = galsim.Shear(g1=g1, g2=g2)
+    dims = [dim]*2
+    # cen = (np.array(dims)-1)/2
+
+    # coadd_origin = galsim.PositionD(x=cen[1], y=cen[0])
+
+    image = galsim.Image(dim, dim, wcs=coadd_wcs)
+
+    _draw_objects(
+        image,
+        objlist, shifts, psf, draw_method,
+        coadd_bbox_cen_gs_skypos,
+        rng,
+        shear=shear,
+    )
+    if star_objlist is not None and draw_stars:
+        assert star_shifts is not None, 'send star_shifts with star_objlist'
+        _draw_objects(
+            image,
+            star_objlist, star_shifts, psf, draw_method,
+            coadd_bbox_cen_gs_skypos,
+            rng,
+        )
+
+    image.array[:, :] += rng.normal(scale=noise, size=dims)
+    if sky_n_sigma is not None:
+        image.array[:, :] += sky_n_sigma * noise
+
+    # pixels flagged as bad cols and cosmics will get
+    # set to np.nan
+    # bmask = get_bmask_and_set_image(
+    #     image=image,
+    #     rng=rng,
+    #     cosmic_rays=cosmic_rays,
+    #     bad_columns=bad_columns,
+    # )
+
+    # if bright_objlist is not None:
+    #     bright_info = _draw_bright_objects(
+    #         image=image,
+    #         noise=noise,
+    #         origin=se_origin,
+    #         bmask=bmask,
+    #         band=band,
+    #         objlist=bright_objlist,
+    #         shifts=bright_shifts,
+    #         mags=bright_mags,
+    #         psf=psf,
+    #         coadd_bbox_cen_gs_skypos=coadd_bbox_cen_gs_skypos,
+    #         mask_threshold=mask_threshold,
+    #         rng=rng,
+    #         star_bleeds=star_bleeds,
+    #         draw_stars=draw_stars,
+    #     )
+    # else:
+    #     bright_info = []
+    bright_info = []
+
+    #dm_wcs = make_dm_wcs(se_wcs)
+    #dm_psf = make_dm_psf(psf=psf, psf_dim=psf_dim, wcs=se_wcs)
+
+    variance = image.copy()
+    variance.array[:, :] = noise**2
+
+    masked_image = afw_image.MaskedImageF(dim, dim)
+    masked_image.image.array[:, :] = image.array
+    masked_image.variance.array[:, :] = variance.array
+    # masked_image.mask.array[:, :] = bmask.array
+
+    coadd = afw_image.ExposureF(masked_image)
+
+    filter_label = afw_image.FilterLabel(band=band, physical=band)
+    coadd.setFilterLabel(filter_label)
+
+    coadd.setPsf(psf)
+
+    coadd.setWcs(coadd_wcs)
+
+    #detector = DetectorWrapper().detector
+    #exp.setDetector(detector)
+
+    return coadd, bright_info
 
 
 def _draw_objects(

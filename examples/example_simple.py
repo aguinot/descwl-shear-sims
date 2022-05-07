@@ -5,8 +5,8 @@ The images are dithered and rotated
 """
 import numpy as np
 
-import lsst.afw.image as afw_image
-import lsst.afw.geom as afw_geom
+#import lsst.afw.image as afw_image
+#import lsst.afw.geom as afw_geom
 from descwl_shear_sims.galaxies import make_galaxy_catalog
 from descwl_shear_sims.psfs import make_fixed_psf
 from descwl_shear_sims.sim import make_sim
@@ -57,23 +57,23 @@ def go():
     # bright_info: is a structured array with position and mask info for bright
     #   objects
 
-    for key in ['band_data', 'coadd_wcs', 'psf_dims', 'coadd_bbox', 'bright_info']:
-        assert key in data
+    # for key in ['band_data', 'coadd_wcs', 'psf_dims', 'coadd_bbox', 'bright_info']:
+    #     assert key in data
 
-    for band in bands:
-        assert band in data['band_data']
-        assert isinstance(data['band_data'][band][0], afw_image.ExposureF)
+    # for band in bands:
+    #     assert band in data['band_data']
+    #     assert isinstance(data['band_data'][band][0], afw_image.ExposureF)
 
-    assert isinstance(data['coadd_wcs'], afw_geom.SkyWcs)
+    # assert isinstance(data['coadd_wcs'], afw_geom.SkyWcs)
 
-    assert data['psf_dims'] == (psf_dim, )*2
+    # assert data['psf_dims'] == (psf_dim, )*2
 
-    extent = data['coadd_bbox'].getDimensions()
-    edims = (extent.getX(), extent.getY())
-    assert edims == (coadd_dim, )*2
+    # extent = data['coadd_bbox'].getDimensions()
+    # edims = (extent.getX(), extent.getY())
+    # assert edims == (coadd_dim, )*2
 
-    # we should have no bright objects
-    assert data['bright_info'].size == 0
+    # # we should have no bright objects
+    # assert data['bright_info'].size == 0
 
 
 if __name__ == '__main__':

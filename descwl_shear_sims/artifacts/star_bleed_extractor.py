@@ -20,7 +20,8 @@ def extract_bleeds(*, image_file, cat_file, out_file):
     out_file: str
         path for output file
     """
-    import lsst.afw.image as afw_image
+    #import lsst.afw.image as afw_image
+    import afw_image
 
     print('will read from:', image_file)
     print('will write to:', out_file)
