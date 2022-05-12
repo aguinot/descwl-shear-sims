@@ -656,6 +656,7 @@ def _draw_objects(
         convolved_object = get_convolved_object(obj, psf, image_pos)
 
         stamp = convolved_object.drawImage(
+            nx=101, ny=101,
             center=image_pos, wcs=local_wcs, method=draw_method, **kw
         )
 
