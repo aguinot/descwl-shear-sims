@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Image():
     """_summary_
     """
@@ -44,9 +45,8 @@ class MaskedImageF():
                 )
         self._setup_all()
 
-
     def _setup_all(self):
-        
+
         self.image = Image(self._xsize, self._ysize)
         self.variance = Image(self._xsize, self._ysize)
         self.mask = Image(self._xsize, self._ysize, dtype=np.int16)
@@ -68,6 +68,7 @@ class ExposureF():
                 self._ysize = args[0]._ysize
                 self.mask = args[0].mask
                 self.image = args[0].image
+                self.variance = args[0].variance
             else:
                 raise ValueError(
                     "Class must be instentiate with either an image size or an"
@@ -88,11 +89,11 @@ class ExposureF():
         return self._filter_label
 
     @property
-    def Psf(self):
+    def psf(self):
         return self._psf
 
     @property
-    def Wcs(self):
+    def wcs(self):
         return self._wcs
 
     def setFilterLabel(self, filter_label):
@@ -111,14 +112,14 @@ class ExposureF():
         self._wcs = wcs
 
     def _setup_all(self):
-        
+
         self.image = Image(self._xsize, self._ysize)
-        #self.variance = Image(self._xsize, self._ysize)
-        #self.mask = Image(self._xsize, self._ysize, dtype=np.int16)
+        # self.variance = Image(self._xsize, self._ysize)
+        # self.mask = Image(self._xsize, self._ysize, dtype=np.int16)
 
 
 class FilterLabel():
-    
+
     def __init__(self, band, physical):
 
         self.band = band

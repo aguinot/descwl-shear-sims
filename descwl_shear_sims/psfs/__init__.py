@@ -3,3 +3,4 @@ from . import ps_psf
 from .ps_psf import PowerSpectrumPSF, make_ps_psf
 from .fixed_psf import FixedPSF, make_fixed_psf
 #from .dmpsfs import FixedDMPSF, PowerSpectrumDMPSF, make_dm_psf
+from .gspsfs import make_gs_psf

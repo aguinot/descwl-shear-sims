@@ -3,8 +3,8 @@ import esutil as eu
 import galsim
 import numpy as np
 
-#import lsst.afw.image as afw_image
-#from lsst.afw.cameraGeom.testUtils import DetectorWrapper
+# import lsst.afw.image as afw_image
+# from lsst.afw.cameraGeom.testUtils import DetectorWrapper
 
 from . import afw_image
 
@@ -18,8 +18,8 @@ from .masking import (
     calculate_bright_star_mask_radius,
 )
 from .objlists import get_objlist
-#from .psfs import make_dm_psf
-from .wcs import make_wcs#, make_dm_wcs, make_coadd_dm_wcs
+from .psfs import make_gs_psf
+from .wcs import make_wcs  # , make_dm_wcs, make_coadd_dm_wcs
 from .wcs.wcstools import make_coadd_wcs
 
 
@@ -220,7 +220,7 @@ def make_sim(
         'coadd_wcs': coadd_wcs,
         'psf_dims': (psf_dim, )*2,
         'coadd_dims': (coadd_dim, )*2,
-        #'coadd_bbox': coadd_bbox,
+        # 'coadd_bbox': coadd_bbox,
         'bright_info': bright_info,
     }
 
@@ -350,7 +350,7 @@ def make_exp(
 
     se_origin = galsim.PositionD(x=cen[1], y=cen[0])
     if dither:
-        dither_range = 0.5
+        dither_range = 500
         off = rng.uniform(low=-dither_range, high=dither_range, size=2)
         offset = galsim.PositionD(x=off[0], y=off[1])
         se_origin = se_origin + offset
@@ -419,8 +419,7 @@ def make_exp(
     else:
         bright_info = []
 
-    #dm_wcs = make_dm_wcs(se_wcs)
-    #dm_psf = make_dm_psf(psf=psf, psf_dim=psf_dim, wcs=se_wcs)
+    gs_psf = make_gs_psf(psf=psf, psf_dim=psf_dim, wcs=se_wcs)
 
     variance = image.copy()
     variance.array[:, :] = noise**2
@@ -435,12 +434,12 @@ def make_exp(
     filter_label = afw_image.FilterLabel(band=band, physical=band)
     exp.setFilterLabel(filter_label)
 
-    exp.setPsf(psf)
+    exp.setPsf(gs_psf)
 
     exp.setWcs(se_wcs)
 
-    #detector = DetectorWrapper().detector
-    #exp.setDetector(detector)
+    # detector = DetectorWrapper().detector
+    # exp.setDetector(detector)
 
     return exp, bright_info
 
@@ -599,8 +598,8 @@ def make_coadd(
     #     bright_info = []
     bright_info = []
 
-    #dm_wcs = make_dm_wcs(se_wcs)
-    #dm_psf = make_dm_psf(psf=psf, psf_dim=psf_dim, wcs=se_wcs)
+    # dm_wcs = make_dm_wcs(se_wcs)
+    # dm_psf = make_dm_psf(psf=psf, psf_dim=psf_dim, wcs=se_wcs)
 
     variance = image.copy()
     variance.array[:, :] = noise**2
@@ -619,8 +618,8 @@ def make_coadd(
 
     coadd.setWcs(coadd_wcs)
 
-    #detector = DetectorWrapper().detector
-    #exp.setDetector(detector)
+    # detector = DetectorWrapper().detector
+    # exp.setDetector(detector)
 
     return coadd, bright_info
 
