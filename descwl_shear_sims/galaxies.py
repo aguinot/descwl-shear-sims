@@ -5,6 +5,7 @@ import copy
 import galsim
 from galsim import DeVaucouleurs
 from galsim import Exponential
+from galsim import Gaussian
 import descwl
 
 from .shifts import get_shifts, get_pair_shifts
@@ -161,7 +162,7 @@ class FixedGalaxyCatalog(object):
         Buffer region with no objects, on all sides of image.  Ingored
         for layout 'grid'.  Default 0.
     morph: str
-        Galaxy morphology, 'exp', 'dev' or 'bd', 'bdk'.  Default 'exp'
+        Galaxy morphology, 'gauss', 'exp', 'dev' or 'bd', 'bdk'.  Default 'exp'
     """
     def __init__(self, *, rng, coadd_dim, layout, mag, hlr, buff=0, morph='exp'):
         self.gal_type = 'fixed'
@@ -219,7 +220,9 @@ class FixedGalaxyCatalog(object):
         galsim.GSObject
         """
 
-        if self.morph == 'exp':
+        if self.morph == 'gauss':
+            gal = _generate_gauss(hlr=self.hlr, flux=flux)
+        elif self.morph == 'exp':
             gal = _generate_exp(hlr=self.hlr, flux=flux)
         elif self.morph == 'dev':
             gal = _generate_dev(hlr=self.hlr, flux=flux)
@@ -260,7 +263,7 @@ class GalaxyCatalog(FixedGalaxyCatalog):
         Buffer region with no objects, on all sides of image.  Ingored
         for layout 'grid'.  Default 0.
     morph: str
-        Galaxy morphology, 'exp', 'dev' or 'bd', 'bdk'.  Default 'exp'
+        Galaxy morphology, 'gauss', 'exp', 'dev' or 'bd', 'bdk'.  Default 'exp'
     """
     def __init__(self, *, rng, coadd_dim, layout, mag, hlr, buff=0, morph='exp'):
         super().__init__(
@@ -307,7 +310,11 @@ class GalaxyCatalog(FixedGalaxyCatalog):
         galsim.GSObject
         """
 
-        if self.morph == 'exp':
+        if self.morph == 'gauss':
+            gal = _generate_gauss(
+                hlr=self.hlr, flux=flux, vary=True, rng=self._morph_rng,
+            )
+        elif self.morph == 'exp':
             gal = _generate_exp(
                 hlr=self.hlr, flux=flux, vary=True, rng=self._morph_rng,
             )
@@ -330,6 +337,16 @@ class GalaxyCatalog(FixedGalaxyCatalog):
             raise ValueError(f"bad morph '{self.morph}'")
 
         return gal
+
+
+def _generate_gauss(hlr, flux, vary=False, rng=None):
+    gal = Gaussian(half_light_radius=hlr, flux=flux)
+
+    if vary:
+        g1, g2 = _generate_g1g2(rng)
+        gal = gal.shear(g1=g1, g2=g2)
+
+    return gal
 
 
 def _generate_exp(hlr, flux, vary=False, rng=None):
@@ -556,7 +573,7 @@ class PairGalaxyCatalog(GalaxyCatalog):
     sep: float
         Separation of pair in arcsec
     morph: str
-        Galaxy morphology, 'exp', 'dev' or 'bd', 'bdk'.  Default 'exp'
+        Galaxy morphology, 'gauss', 'exp', 'dev' or 'bd', 'bdk'.  Default 'exp'
     """
     def __init__(self, *, rng, mag, hlr, sep, morph='exp'):
         self.gal_type = 'varying'
