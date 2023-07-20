@@ -20,6 +20,8 @@ def make_fixed_psf(*, psf_type):
         psf = galsim.Gaussian(fwhm=FIXED_PSF_FWHM)
     elif psf_type == "moffat":
         psf = galsim.Moffat(fwhm=FIXED_PSF_FWHM, beta=FIXED_MOFFAT_BETA)
+    elif psf_type == "dirac":
+        psf = galsim.DeltaFunction()
     else:
         raise ValueError("bad psf_type '%s'" % psf_type)
 
