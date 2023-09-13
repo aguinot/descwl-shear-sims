@@ -172,7 +172,7 @@ def make_sim(
                 objlist=lists['objlist'],
                 shifts=lists['shifts'],
                 dim=se_dim,
-                psf=psf,
+                psf=psf[epoch],
                 psf_dim=psf_dim,
                 g1=g1, g2=g2,
                 star_objlist=lists['star_objlist'],
@@ -233,7 +233,7 @@ def make_sim(
             shifts=lists['shifts'],
             dim=coadd_dim,
             coadd_wcs=coadd_wcs,
-            psf=psf,
+            psf=np.mean(psf),
             psf_dim=psf_dim,
             g1=g1,
             g2=g2,
@@ -350,7 +350,7 @@ def make_exp(
 
     se_origin = galsim.PositionD(x=cen[1], y=cen[0])
     if dither:
-        dither_range = 500
+        dither_range = 100
         off = rng.uniform(low=-dither_range, high=dither_range, size=2)
         offset = galsim.PositionD(x=off[0], y=off[1])
         se_origin = se_origin + offset
@@ -546,7 +546,7 @@ def make_coadd(
 
     # coadd_origin = galsim.PositionD(x=cen[1], y=cen[0])
 
-    image = galsim.Image(dim, dim, wcs=coadd_wcs)
+    image = galsim.Image(dim, dim, wcs=coadd_wcs, xmin=0, ymin=0)
 
     _draw_objects(
         image,

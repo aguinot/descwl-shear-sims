@@ -44,6 +44,7 @@ def make_wcs(*, scale, image_origin, world_origin, theta=None):
         units=galsim.arcsec,
     )
 
+
 def make_coadd_wcs(coadd_dim):
     """
     make a coadd wcs, using the default world origin

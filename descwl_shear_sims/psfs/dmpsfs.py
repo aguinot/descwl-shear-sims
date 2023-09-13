@@ -1,11 +1,9 @@
 import numpy as np
 import galsim
-#import lsst.afw.image as afw_image
-#import lsst.geom as geom
-#from lsst.meas.algorithms import ImagePsf
+import lsst.afw.image as afw_image
+import lsst.geom as geom
+from lsst.meas.algorithms import ImagePsf
 from .ps_psf import PowerSpectrumPSF
-
-#from . import afw_image
 
 
 def make_dm_psf(psf, psf_dim, wcs):
@@ -135,7 +133,7 @@ class FixedDMPSF(ImagePsf):
         offset: tuple, optional
             The (x, y) offset, default None
         """
-        #from lsst.geom import Point2I
+        from lsst.geom import Point2I
         dim = self._psf_dim
 
         x = image_pos.x
